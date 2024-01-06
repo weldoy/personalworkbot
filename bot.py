@@ -6,7 +6,7 @@ import logging
 import requests
 
 from key import TOKEN
-from fsm import weather_handler
+from fsm import weather_handler, ip_handler
 
 logging.basicConfig(
     format='%(asctime)s | %(levelname)s | %(name)s: %(message)s',
@@ -23,6 +23,7 @@ def main():
     dp.add_handler(CommandHandler('start', start))
     dp.add_handler(CommandHandler('help', get_help))
     dp.add_handler(weather_handler)
+    dp.add_handler(ip_handler)
     dp.add_handler(CommandHandler('btcvalue', get_btc_value))
     dp.add_handler(MessageHandler(Filters.command, unknown))
 
@@ -55,7 +56,8 @@ def get_help(update: Update, context: CallbackContext):
         '',
         f"There is i'll tell u about my arsenal :",
         '/weather - that will help you if you want to know the weather in cities.',
-        '/btcvalue - it shows the latest BTC price.',
+        '/btcvalue - that shows the latest BTC price.',
+        "/ipinfo - that will help you to get someone's IP information",
         '',
         'The rest is in development...'
     ]
@@ -68,9 +70,13 @@ def get_btc_value(update: Update, context: CallbackContext):
     logger.info(f'{update.effective_user.username} called the function - get_btc_value')
     url = 'https://blockchain.info/ru/ticker'
     req = requests.get(url)
-    req_json = req.json()
-    answer = f'The latest price BTC - {float(req_json["USD"]["last"])}$'
-    context.bot.send_message(update.effective_chat.id, answer, reply_markup=ReplyKeyboardRemove())
+    if req.status_code == 200:
+        req_json = req.json()
+        answer = f'The latest price BTC - {float(req_json["USD"]["last"])}$'
+        context.bot.send_message(update.effective_chat.id, answer, reply_markup=ReplyKeyboardRemove())
+    else:
+        context.bot.send_message(update.effective_chat.id, text='Error, please try it later.',
+                                 reply_markup=ReplyKeyboardRemove())
 
 
 def unknown(update, context):
