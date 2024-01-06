@@ -9,7 +9,7 @@ from key import API_WEATHER
 
 logger = logging.getLogger(__name__)
 
-WAIT_CITY = range(1)
+WAIT_CITY, WAIT_IP = range(2)
 
 
 def ask_weather(update: Update, context: CallbackContext):
@@ -41,6 +41,59 @@ weather_handler = ConversationHandler(
     entry_points=[CommandHandler('weather', ask_weather)],
     states={
         WAIT_CITY: [MessageHandler(Filters.text, get_weather)],
+    },
+    fallbacks=[]
+)
+
+
+def ask_info_by_ip(update: Update, context: CallbackContext):
+    logger.info(f'{update.effective_user.username} called the function - ask_info_by_ip')
+    text = 'Please enter your target ip : '
+    context.bot.send_message(update.effective_chat.id, text, reply_markup=ReplyKeyboardRemove())
+
+    return WAIT_IP
+
+
+def get_info_by_ip(update: Update, context: CallbackContext):
+    logger.info(f'{update.effective_user.username} called the function - get_info_by_ip')
+    try:
+        ip = update.message.text
+        response = requests.get(url=f'http://ip-api.com/json/{ip}').json()
+
+        data = {
+            '[IP]': response.get('query'),
+            '[Int prov]': response.get('isp'),
+            '[Org]': response.get('org'),
+            '[Country]': response.get('country'),
+            '[Region Name]': response.get('regionName'),
+            '[City]': response.get('city'),
+            '[ZIP]': response.get('zip'),
+            '[Lat]': response.get('lat'),
+            '[Lon]': response.get('lon'),
+        }
+
+        a = []
+        for k, v in data.items():
+            answer = f'{k} : {v}'
+            a.append(f'{answer}\n')
+
+        new_a = ''.join(a)
+        context.bot.send_message(update.effective_chat.id, text=new_a,
+                                 reply_markup=ReplyKeyboardRemove())
+
+    except requests.exceptions.ConnectionError:
+        context.bot.send_message(update.effective_chat.id, '[!] Please check your connection!',
+                                 reply_markup=ReplyKeyboardRemove())
+    except Exception:
+        context.bot.send_message(update.effective_chat.id, '[!] Something goes wrong, try again!',
+                                 reply_markup=ReplyKeyboardRemove())
+    return ConversationHandler.END
+
+
+ip_handler = ConversationHandler(
+    entry_points=[CommandHandler('ipinfo', ask_info_by_ip)],
+    states={
+        WAIT_IP: [MessageHandler(Filters.text, get_info_by_ip)],
     },
     fallbacks=[]
 )
