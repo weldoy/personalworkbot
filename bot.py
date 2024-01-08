@@ -6,7 +6,7 @@ import logging
 import requests
 
 from key import TOKEN
-from fsm import weather_handler, ip_handler
+from fsm import weather_handler, ip_handler, currency_handler
 
 logging.basicConfig(
     format='%(asctime)s | %(levelname)s | %(name)s: %(message)s',
@@ -24,6 +24,7 @@ def main():
     dp.add_handler(CommandHandler('help', get_help))
     dp.add_handler(weather_handler)
     dp.add_handler(ip_handler)
+    dp.add_handler(currency_handler)
     dp.add_handler(CommandHandler('btcvalue', get_btc_value))
     dp.add_handler(MessageHandler(Filters.command, unknown))
 
@@ -46,7 +47,8 @@ def start(update: Update, context: CallbackContext):
     ]
     text = '\n'.join(text)
 
-    update.message.reply_text(text, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
+    context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode=ParseMode.HTML,
+                             disable_web_page_preview=True)
 
 
 def get_help(update: Update, context: CallbackContext):
@@ -57,7 +59,8 @@ def get_help(update: Update, context: CallbackContext):
         f"There is i'll tell u about my arsenal :",
         '/weather - that will help you if you want to know the weather in cities.',
         '/btcvalue - that shows the latest BTC price.',
-        "/ipinfo - that will help you to get someone's IP information",
+        "/ipinfo - that will help you to get someone's IP information.",
+        '/currency - that shows the currency you want in rubles.',
         '',
         'The rest is in development...'
     ]
